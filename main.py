@@ -10,7 +10,6 @@ import datetime
 import nest_asyncio
 import os
 import json
-from oauth2client.service_account import ServiceAccountCredentials
 nest_asyncio.apply()  # Fix lỗi nested event loop
 
 def connect_google_sheets():
@@ -20,7 +19,7 @@ def connect_google_sheets():
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 
     client = gspread.authorize(creds)
-    sheet = client.open("ViMo")
+    sheet = client.open("ViMo")  # Tên Google Sheet
     return sheet
 
 def getnew():
@@ -41,7 +40,6 @@ def getnew():
 
     return href
 
-
 def update_google_sheet(data):
     sheet = connect_google_sheets()
     today_date = datetime.datetime.now().strftime("%d-%m-%Y")
@@ -53,12 +51,13 @@ def update_google_sheet(data):
         worksheet = sheet.add_worksheet(title=today_date, rows="1000", cols="3")
         worksheet.append_row(["Title", "Summary", "Link"])
 
-    # Thêm thời gian cập nhật vào hàng đầu tiên
-    worksheet.insert_row([f"Cập nhật lúc: {current_time}"], 1)
+    # Ghi đè thời gian cập nhật vào ô A1
+    worksheet.update('A1', [[f"Cập nhật lúc: {current_time}"]])
 
+    # Kiểm tra các link đã tồn tại
     existing_links = set()
     all_rows = worksheet.get_all_values()
-    for row in all_rows[2:]:  # Bỏ qua hàng đầu tiên (thời gian cập nhật)
+    for row in all_rows[1:]:  # Bỏ qua hàng đầu tiên (thời gian cập nhật)
         if len(row) > 2:
             existing_links.add(row[2])
 
@@ -70,12 +69,9 @@ def update_google_sheet(data):
     else:
         print("Không có tin mới để thêm.")
 
-
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = update.effective_chat.id
     await update.message.reply_text(f'Xin chào! Chat ID của bạn là: {chat_id}')
-
 
 async def send_news():
     print("Đang tự động gửi tin tức...")
@@ -86,10 +82,8 @@ async def send_news():
         for title, summary, link in href:
             message = f"{title}\n{summary}\n{link}"
             await app.bot.send_message(chat_id=chat_id, text=message)
-        # await app.bot.send_message(chat_id=chat_id, text=f"Đã gửi {len(href)} tin tức.")
 
     update_google_sheet(href)
-
 
 async def main():
     # Cấu hình bot Telegram
@@ -97,14 +91,13 @@ async def main():
     app = ApplicationBuilder().token("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A").build()
     app.add_handler(CommandHandler("start", start))
 
-    # Lên lịch tự động gửi tin mỗi 1 phút
+    # Lên lịch tự động gửi tin mỗi 90 phút
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news, 'interval', minutes=1)
+    scheduler.add_job(send_news, 'interval', minutes=90)
     scheduler.start()
 
     print("Bot đang chạy...")
     await app.run_polling()
-
 
 if __name__ == "__main__":
     asyncio.run(main())

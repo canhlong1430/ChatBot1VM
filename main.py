@@ -20,7 +20,7 @@ def connect_google_sheets():
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 
     client = gspread.authorize(creds)
-    sheet = client.open("ViMo")
+    sheet = client.open("News")
     return sheet
 
 def getnew():
@@ -65,6 +65,11 @@ def update_google_sheet(data):
         print(f"Đã thêm {len(new_data)} tin mới vào Google Sheet.")
     else:
         print("Không có tin mới để thêm.")
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.effective_chat.id
+    await update.message.reply_text(f'Xin chào! Chat ID của bạn là: {chat_id}')
 
 
 async def send_news():

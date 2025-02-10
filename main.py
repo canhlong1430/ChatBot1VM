@@ -8,12 +8,16 @@ from oauth2client.service_account import ServiceAccountCredentials
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import datetime
 import nest_asyncio
-
+import os
+import json
+from oauth2client.service_account import ServiceAccountCredentials
 nest_asyncio.apply()  # Fix lỗi nested event loop
 
 def connect_google_sheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("/app/telegramnewsbot-450502-120fa6cf571b.json", scope)
+    creds_json = os.getenv("GOOGLE_CREDENTIALS")
+    creds_dict = json.loads(creds_json)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 
     client = gspread.authorize(creds)
     sheet = client.open("News")

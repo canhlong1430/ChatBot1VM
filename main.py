@@ -55,9 +55,8 @@ def update_google_sheet(data):
     try:
         worksheet = sheet.worksheet(today_date)
     except gspread.exceptions.WorksheetNotFound:
-        worksheet = sheet.add_worksheet(title=today_date, rows="1000", cols="3")
-        worksheet.append_row(["Title", "Summary", "Link"])
-
+        worksheet = sheet.add_worksheet(title=today_date, rows="1000", cols="4")
+        worksheet.append_row(["Title", "Summary", "Link", "Updated Time"])
     # Ghi đè thời gian cập nhật vào ô A1
     worksheet.update(range_name='D1', values=[[f"Cập nhật lúc: {current_time} (GMT+7)"]])
 

@@ -10,6 +10,7 @@ import datetime
 import nest_asyncio
 import os
 import json
+import pytz  # Thêm pytz để xử lý múi giờ
 nest_asyncio.apply()  # Fix lỗi nested event loop
 
 def connect_google_sheets():
@@ -42,8 +43,12 @@ def getnew():
 
 def update_google_sheet(data):
     sheet = connect_google_sheets()
-    today_date = datetime.datetime.now().strftime("%d-%m-%Y")
-    current_time = datetime.datetime.now().strftime("%H:%M:%S")
+    
+    # Lấy thời gian hiện tại theo múi giờ Việt Nam (GMT+7)
+    vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
+    now = datetime.datetime.now(vn_tz)
+    today_date = now.strftime("%d-%m-%Y")
+    current_time = now.strftime("%H:%M:%S")
 
     try:
         worksheet = sheet.worksheet(today_date)
@@ -52,7 +57,7 @@ def update_google_sheet(data):
         worksheet.append_row(["Title", "Summary", "Link"])
 
     # Ghi đè thời gian cập nhật vào ô A1
-    worksheet.update('A1', [[f"Cập nhật lúc: {current_time}"]])
+    worksheet.update('A1', [[f"Cập nhật lúc: {current_time} (GMT+7)"]])
 
     # Kiểm tra các link đã tồn tại
     existing_links = set()

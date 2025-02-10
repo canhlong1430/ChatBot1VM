@@ -20,7 +20,7 @@ def connect_google_sheets():
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 
     client = gspread.authorize(creds)
-    sheet = client.open("News")
+    sheet = client.open("ViMo")
     return sheet
 
 def getnew():

@@ -98,7 +98,7 @@ async def send_news():
 async def main():
     # Cấu hình bot Telegram
     global app
-    app = ApplicationBuilder().token("7555641534:AAHmv8xvoycx7gDQrOMcbEYcHtv1yJJjGc8").build()
+    app = ApplicationBuilder().token("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A").build()
     app.add_handler(CommandHandler("start", start))
 
     # Lên lịch tự động gửi tin mỗi 90 phút

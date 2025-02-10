@@ -13,9 +13,8 @@ nest_asyncio.apply()  # Fix lỗi nested event loop
 
 def connect_google_sheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(
-        "C:/Users/canhl/Downloads/telegramnewsbot-450502-120fa6cf571b.json", scope
-    )
+    creds = ServiceAccountCredentials.from_json_keyfile_name("/app/telegramnewsbot-450502-120fa6cf571b.json", scope)
+
     client = gspread.authorize(creds)
     sheet = client.open("News")
     return sheet

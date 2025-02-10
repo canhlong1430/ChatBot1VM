@@ -45,6 +45,7 @@ def getnew():
 def update_google_sheet(data):
     sheet = connect_google_sheets()
     today_date = datetime.datetime.now().strftime("%d-%m-%Y")
+    current_time = datetime.datetime.now().strftime("%H:%M:%S")
 
     try:
         worksheet = sheet.worksheet(today_date)
@@ -52,9 +53,12 @@ def update_google_sheet(data):
         worksheet = sheet.add_worksheet(title=today_date, rows="1000", cols="3")
         worksheet.append_row(["Title", "Summary", "Link"])
 
+    # Thêm thời gian cập nhật vào hàng đầu tiên
+    worksheet.insert_row([f"Cập nhật lúc: {current_time}"], 1)
+
     existing_links = set()
     all_rows = worksheet.get_all_values()
-    for row in all_rows[1:]:
+    for row in all_rows[2:]:  # Bỏ qua hàng đầu tiên (thời gian cập nhật)
         if len(row) > 2:
             existing_links.add(row[2])
 
@@ -65,6 +69,7 @@ def update_google_sheet(data):
         print(f"Đã thêm {len(new_data)} tin mới vào Google Sheet.")
     else:
         print("Không có tin mới để thêm.")
+
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -94,7 +99,7 @@ async def main():
 
     # Lên lịch tự động gửi tin mỗi 1 phút
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news, 'interval', minutes=90)
+    scheduler.add_job(send_news, 'interval', minutes=1)
     scheduler.start()
 
     print("Bot đang chạy...")

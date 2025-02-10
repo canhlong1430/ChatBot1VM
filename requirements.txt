@@ -5,3 +5,5 @@ gspread
 oauth2client
 apscheduler
 nest_asyncio
+json
+os

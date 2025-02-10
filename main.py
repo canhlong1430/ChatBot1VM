@@ -98,7 +98,7 @@ async def main():
 
     # Lên lịch tự động gửi tin mỗi 90 phút
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news, 'interval', minutes=90)
+    scheduler.add_job(send_news, 'interval', minutes=1)
     scheduler.start()
 
     print("Bot đang chạy...")

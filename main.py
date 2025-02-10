@@ -58,8 +58,8 @@ def update_google_sheet(data):
         worksheet.append_row(["Title", "Summary", "Link", "Updated Time"])
 
     # **Expand to column D** before updating
-    worksheet.resize(rows=1000, cols=4)
-    worksheet.update('D1', f"Cập nhật lúc: {current_time} (GMT+7)")
+    worksheet.update(range_name='D1', values=[[f"Cập nhật lúc: {current_time} (GMT+7)"]])
+
 
     existing_links = set(row[2] for row in worksheet.get_all_values()[1:] if len(row) > 2)
     new_data = [row for row in data if row[2] not in existing_links]

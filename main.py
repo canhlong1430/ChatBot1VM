@@ -51,28 +51,23 @@ def update_google_sheet(data):
     current_time = now.strftime("%H:%M:%S")
 
     try:
-        worksheet = sheet.worksheet(today_date)
-    except gspread.exceptions.WorksheetNotFound:
-        worksheet = sheet.add_worksheet(title=today_date, rows="1000", cols="3")
-        worksheet.append_row(["Title", "Summary", "Link"])
+    worksheet = sheet.worksheet(today_date)
+except gspread.exceptions.WorksheetNotFound:
+    worksheet = sheet.add_worksheet(title=today_date, rows="1000", cols="4")
+    worksheet.append_row(["Title", "Summary", "Link"])
 
-    # Ghi đè thời gian cập nhật vào ô A1
-    worksheet.update(range_name='A1', values=[[f"Cập nhật lúc: {current_time} (GMT+7)"]])
+# Ghi thời gian cập nhật vào ô D1 thay vì A1
+worksheet.update('D1', f"Cập nhật lúc: {current_time} (GMT+7)")
 
-    # Kiểm tra các link đã tồn tại
-    existing_links = set()
-    all_rows = worksheet.get_all_values()
-    for row in all_rows[1:]:  # Bỏ qua hàng đầu tiên (thời gian cập nhật)
-        if len(row) > 2:
-            existing_links.add(row[2])
+# Kiểm tra link đã tồn tại
+existing_links = set(row[2] for row in worksheet.get_all_values()[1:] if len(row) > 2)
+new_data = [row for row in data if row[2] not in existing_links]
 
-    new_data = [row for row in data if row[2] not in existing_links]
-
-    if new_data:
-        worksheet.append_rows(new_data, value_input_option="RAW")
-        print(f"Đã thêm {len(new_data)} tin mới vào Google Sheet.")
-    else:
-        print("Không có tin mới để thêm.")
+if new_data:
+    worksheet.append_rows(new_data, value_input_option="RAW")
+    print(f"Đã thêm {len(new_data)} tin mới vào Google Sheet.")
+else:
+    print("Không có tin mới để thêm.")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = update.effective_chat.id

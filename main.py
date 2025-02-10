@@ -12,7 +12,7 @@ import os
 import json
 from oauth2client.service_account import ServiceAccountCredentials
 nest_asyncio.apply()  # Fix lỗi nested event loop
-print(os.getenv("GOOGLE_CREDENTIALS"))
+
 def connect_google_sheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds_json = os.getenv("GOOGLE_CREDENTIALS")
@@ -22,7 +22,6 @@ def connect_google_sheets():
     client = gspread.authorize(creds)
     sheet = client.open("News")
     return sheet
-
 
 def getnew():
     href = []
@@ -68,11 +67,6 @@ def update_google_sheet(data):
         print("Không có tin mới để thêm.")
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = update.effective_chat.id
-    await update.message.reply_text(f'Xin chào! Chat ID của bạn là: {chat_id}')
-
-
 async def send_news():
     print("Đang tự động gửi tin tức...")
     href = getnew()
@@ -95,7 +89,7 @@ async def main():
 
     # Lên lịch tự động gửi tin mỗi 1 phút
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news, 'interval', minutes=1)
+    scheduler.add_job(send_news, 'interval', minutes=90)
     scheduler.start()
 
     print("Bot đang chạy...")

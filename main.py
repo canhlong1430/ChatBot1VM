@@ -59,7 +59,7 @@ def update_google_sheet(data):
         worksheet.append_row(["Title", "Summary", "Link"])
 
     # Ghi đè thời gian cập nhật vào ô A1
-    worksheet.update(range_name='A1', values=[[f"Cập nhật lúc: {current_time} (GMT+7)"]])
+    worksheet.update(range_name='D1', values=[[f"Cập nhật lúc: {current_time} (GMT+7)"]])
 
     # Kiểm tra các link đã tồn tại
     existing_links = set()

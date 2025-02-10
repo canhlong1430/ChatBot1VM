@@ -43,7 +43,7 @@ def getnew():
 
 def update_google_sheet(data):
     sheet = connect_google_sheets()
-    
+
     # Lấy thời gian hiện tại theo múi giờ Việt Nam (GMT+7)
     vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
     now = datetime.datetime.now(vn_tz)
@@ -51,23 +51,24 @@ def update_google_sheet(data):
     current_time = now.strftime("%H:%M:%S")
 
     try:
-    worksheet = sheet.worksheet(today_date)
-except gspread.exceptions.WorksheetNotFound:
-    worksheet = sheet.add_worksheet(title=today_date, rows="1000", cols="4")
-    worksheet.append_row(["Title", "Summary", "Link"])
+        worksheet = sheet.worksheet(today_date)
+    except gspread.exceptions.WorksheetNotFound:
+        worksheet = sheet.add_worksheet(title=today_date, rows="1000", cols="4")
+        worksheet.append_row(["Title", "Summary", "Link"])
 
-# Ghi thời gian cập nhật vào ô D1 thay vì A1
-worksheet.update('D1', f"Cập nhật lúc: {current_time} (GMT+7)")
+    # Ghi thời gian cập nhật vào ô D1 thay vì A1
+    worksheet.update('D1', f"Cập nhật lúc: {current_time} (GMT+7)")
 
-# Kiểm tra link đã tồn tại
-existing_links = set(row[2] for row in worksheet.get_all_values()[1:] if len(row) > 2)
-new_data = [row for row in data if row[2] not in existing_links]
+    # Kiểm tra link đã tồn tại
+    existing_links = set(row[2] for row in worksheet.get_all_values()[1:] if len(row) > 2)
+    new_data = [row for row in data if row[2] not in existing_links]
 
-if new_data:
-    worksheet.append_rows(new_data, value_input_option="RAW")
-    print(f"Đã thêm {len(new_data)} tin mới vào Google Sheet.")
-else:
-    print("Không có tin mới để thêm.")
+    if new_data:
+        worksheet.append_rows(new_data, value_input_option="RAW")
+        print(f"Đã thêm {len(new_data)} tin mới vào Google Sheet.")
+    else:
+        print("Không có tin mới để thêm.")
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = update.effective_chat.id

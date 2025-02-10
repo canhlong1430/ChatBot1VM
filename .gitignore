@@ -7,8 +7,6 @@ __pycache__/
 venv/
 env/
 
-# Google Service Account JSON (đừng upload file này lên GitHub)
-telegramnewsbot-450502-120fa6cf571b.json
 
 # Logs and temporary files
 *.log

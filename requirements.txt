@@ -1,0 +1,7 @@
+python-telegram-bot==20.0
+requests
+beautifulsoup4
+gspread
+oauth2client
+apscheduler
+nest_asyncio

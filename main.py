@@ -12,7 +12,7 @@ import os
 import json
 from oauth2client.service_account import ServiceAccountCredentials
 nest_asyncio.apply()  # Fix lỗi nested event loop
-
+print(os.getenv("GOOGLE_CREDENTIALS"))
 def connect_google_sheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds_json = os.getenv("GOOGLE_CREDENTIALS")

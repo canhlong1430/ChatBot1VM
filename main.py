@@ -89,7 +89,7 @@ async def run_bot_doanhnghiepnqs():
     bot_doanhnghiepnqs.add_handler(CommandHandler("start", start_doanhnghiepnqs))
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news_doanhnghiepnqs, 'interval', minutes=1)
+    scheduler.add_job(send_news_doanhnghiepnqs, 'interval', minutes=1, misfire_grace_time=30)
     scheduler.start()
 
     print("Bot DoanhNghiepNQS đang chạy...")
@@ -121,7 +121,7 @@ async def run_bot_vimonqs():
     bot_vimonqs.add_handler(CommandHandler("start", start_vimonqs))
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news_vimonqs, 'interval', minutes=1)
+    scheduler.add_job(send_news_vimonqs, 'interval', minutes=1, misfire_grace_time=30)
     scheduler.start()
 
     print("Bot ViMoNQS đang chạy...")
@@ -129,3 +129,8 @@ async def run_bot_vimonqs():
 
 async def start_vimonqs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Đây là bot ViMoNQS!")
+async def main():
+    await asyncio.gather(run_bot_doanhnghiepcf(), run_bot_vimocf())
+
+if __name__ == "__main__":
+    asyncio.run(main())

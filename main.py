@@ -130,7 +130,7 @@ async def run_bot_vimonqs():
 async def start_vimonqs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Đây là bot ViMoNQS!")
 async def main():
-    await asyncio.gather(run_bot_doanhnghiepcf(), run_bot_vimocf())
+    await asyncio.gather(run_bot_doanhnghiepnqs(), run_bot_vimonqs())
 
 if __name__ == "__main__":
     asyncio.run(main())

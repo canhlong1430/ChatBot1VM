@@ -27,11 +27,26 @@ def connect_google_sheets(sheet_name):
     return sheet
 
 def update_google_sheet(data, sheet_name):
-    sheet = connect_google_sheets(sheet_name)
+    sheet = connect_google_sheets(sheet_name)  # Hàm kết nối Google Sheets
     vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
     now = datetime.datetime.now(vn_tz)
+
     today_date = now.strftime("%d-%m-%Y")
     current_time = now.strftime("%H:%M:%S")
+
+    # Lấy danh sách tất cả sheet trong file
+    worksheets = sheet.worksheets()
+    sheet_titles = [ws.title for ws in worksheets]
+
+    if len(sheet_titles) > 0:
+        latest_sheet = sheet_titles[-1]  # Sheet cuối cùng trong danh sách
+        if latest_sheet != today_date:
+            # Rename sheet cũ thành ngày mới
+            sheet.worksheet(latest_sheet).update_title(today_date)
+
+            # Xóa dữ liệu cũ, giữ lại tiêu đề
+            worksheet = sheet.worksheet(today_date)
+            worksheet.batch_clear(["A2:D1000"])  # Xóa dữ liệu từ dòng 2 trở đi
 
     try:
         worksheet = sheet.worksheet(today_date)
@@ -39,9 +54,10 @@ def update_google_sheet(data, sheet_name):
         worksheet = sheet.add_worksheet(title=today_date, rows="1000", cols="4")
         worksheet.append_row(["Title", "Summary", "Link", "Updated Time"])
 
-        # Update the time in D1
+    # Cập nhật thời gian vào ô D1
     worksheet.update(range_name='D1', values=[[f"Cập nhật lúc: {current_time} (GMT+7)"]])
 
+    # Kiểm tra các link đã có để tránh trùng lặp
     existing_links = set(row[2] for row in worksheet.get_all_values()[1:] if len(row) > 2)
     new_data = [row for row in data if row[2] not in existing_links]
 

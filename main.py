@@ -100,7 +100,7 @@ async def send_news_doanhnghiepnqs():
 
     if href:
         for title, summary, link in href:
-            await asyncio.sleep(2)  # Chờ 1 giây trước khi gửi tin nhắn tiếp theo
+            await asyncio.sleep(1.5)  # Chờ 1 giây trước khi gửi tin nhắn tiếp theo
 
             message = f"📢 {title}\n{summary}\n🔗 {link}"
             await bot_doanhnghiepnqs.bot.send_message(chat_id=chat_id, text=message, disable_notification=True)
@@ -112,7 +112,7 @@ async def run_bot_doanhnghiepnqs():
     bot_doanhnghiepnqs.add_handler(CommandHandler("start", start_doanhnghiepnqs))
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news_doanhnghiepnqs, 'interval', minutes=75, misfire_grace_time=30)
+    scheduler.add_job(send_news_doanhnghiepnqs, 'interval', minutes=60, misfire_grace_time=30)
     scheduler.start()
 
     print("Bot DoanhNghiepNQS đang chạy...")
@@ -132,7 +132,7 @@ async def send_news_vimonqs():
 
     if href:
         for title, summary, link in href:
-            await asyncio.sleep(2)  # Chờ 1 giây trước khi gửi tin nhắn tiếp theo
+            await asyncio.sleep(3)  # Chờ 1 giây trước khi gửi tin nhắn tiếp theo
 
             message = f"📢 {title}\n{summary}\n🔗 {link}"
             await bot_vimonqs.bot.send_message(chat_id=chat_id, text=message, disable_notification=True)

@@ -66,6 +66,10 @@ def update_google_sheet(data, sheet_name):
         print(f"Đã thêm {len(new_data)} tin mới vào Google Sheet {sheet_name}.")
     else:
         print(f"Không có tin mới để thêm vào {sheet_name}.")
+
+# ===============================
+# Lấy tin tức từ website
+# ===============================
 def get_news(url, headers):
     href = []
     r = requests.get(url, headers=headers)
@@ -83,20 +87,23 @@ def get_news(url, headers):
         href.append((title, summary, link))
 
     return href
+
 # ===============================
 # Bot DoanhNghiepNQS
 # ===============================
 async def send_news_doanhnghiepnqs():
+
     print("Bot DoanhNghiepNQS đang gửi tin tức...")
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.5481.78 Safari/537.36'}
+    headers = {'User-Agent': 'Mozilla/5.0'}
     href = get_news('https://nguoiquansat.vn/doanh-nghiep', headers)
-    chat_id = 7286547285  # Thay bằng chat ID thật
+    chat_id = "@nqsdnn"  # 🔥 Thay bằng username channel hoặc -100xxxxxxxxxx nếu là kênh private
 
     if href:
         for title, summary, link in href:
-            message = f"{title}\n{summary}\n{link}"
-            await bot_doanhnghiepnqs.bot.send_message(chat_id=chat_id, text=message)
+            await asyncio.sleep(1)  # Chờ 1 giây trước khi gửi tin nhắn tiếp theo
+
+            message = f"📢 {title}\n{summary}\n🔗 {link}"
+            await bot_doanhnghiepnqs.bot.send_message(chat_id=chat_id, text=message, disable_notification=True)
     update_google_sheet(href, "DoanhNghiepNQS")
 
 async def run_bot_doanhnghiepnqs():
@@ -105,30 +112,31 @@ async def run_bot_doanhnghiepnqs():
     bot_doanhnghiepnqs.add_handler(CommandHandler("start", start_doanhnghiepnqs))
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news_doanhnghiepnqs, 'interval', minutes=60, misfire_grace_time=30)
+    scheduler.add_job(send_news_doanhnghiepnqs, 'interval', minutes=2, misfire_grace_time=30)
     scheduler.start()
 
     print("Bot DoanhNghiepNQS đang chạy...")
     await bot_doanhnghiepnqs.run_polling()
 
 async def start_doanhnghiepnqs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Đây là bot DoanhNghiepNQS!")
+    await update.message.reply_text("Bot DoanhNghiepNQS đã hoạt động!")
 
 # ===============================
 # Bot ViMoNQS
 # ===============================
-
 async def send_news_vimonqs():
     print("Bot ViMoNQS đang gửi tin tức...")
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.5481.78 Safari/537.36'}
+    headers = {'User-Agent': 'Mozilla/5.0'}
     href = get_news('https://nguoiquansat.vn/vi-mo', headers)
-    chat_id = 7286547285  # Thay bằng chat ID thật
+    chat_id = "@nqsvmm"  # 🔥 Thay bằng username channel hoặc -100xxxxxxxxxx nếu là kênh private
 
     if href:
         for title, summary, link in href:
-            message = f"{title}\n{summary}\n{link}"
-            await bot_vimonqs.bot.send_message(chat_id=chat_id, text=message)
+            await asyncio.sleep(1.5)  # Chờ 1 giây trước khi gửi tin nhắn tiếp theo
+
+            message = f"📢 {title}\n{summary}\n🔗 {link}"
+            await bot_vimonqs.bot.send_message(chat_id=chat_id, text=message, disable_notification=True)
+
     update_google_sheet(href, "ViMoNQS")
 
 async def run_bot_vimonqs():
@@ -137,16 +145,20 @@ async def run_bot_vimonqs():
     bot_vimonqs.add_handler(CommandHandler("start", start_vimonqs))
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news_vimonqs, 'interval', minutes=60, misfire_grace_time=30)
+    scheduler.add_job(send_news_vimonqs, 'interval', minutes=2, misfire_grace_time=30)
     scheduler.start()
 
     print("Bot ViMoNQS đang chạy...")
     await bot_vimonqs.run_polling()
 
 async def start_vimonqs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Đây là bot ViMoNQS!")
+    await update.message.reply_text("Bot ViMoNQS đã hoạt động!")
+
+# ===============================
+# Chạy song song hai bot
+# ===============================
 async def main():
-    await asyncio.gather(run_bot_doanhnghiepnqs(), run_bot_vimonqs())
+    await asyncio.gather(run_bot_vimonqs(), run_bot_doanhnghiepnqs())
 
 if __name__ == "__main__":
     asyncio.run(main())

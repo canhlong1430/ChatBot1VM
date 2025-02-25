@@ -100,7 +100,7 @@ async def send_news_doanhnghiepnqs():
 
     if href:
         for title, summary, link in href:
-            await asyncio.sleep(1)  # Chờ 1 giây trước khi gửi tin nhắn tiếp theo
+            await asyncio.sleep(2)  # Chờ 1 giây trước khi gửi tin nhắn tiếp theo
 
             message = f"📢 {title}\n{summary}\n🔗 {link}"
             await bot_doanhnghiepnqs.bot.send_message(chat_id=chat_id, text=message, disable_notification=True)
@@ -132,7 +132,7 @@ async def send_news_vimonqs():
 
     if href:
         for title, summary, link in href:
-            await asyncio.sleep(1)  # Chờ 1 giây trước khi gửi tin nhắn tiếp theo
+            await asyncio.sleep(2)  # Chờ 1 giây trước khi gửi tin nhắn tiếp theo
 
             message = f"📢 {title}\n{summary}\n🔗 {link}"
             await bot_vimonqs.bot.send_message(chat_id=chat_id, text=message, disable_notification=True)

@@ -128,7 +128,7 @@ async def send_news_vimonqs():
     print("Bot ViMoNQS đang gửi tin tức...")
     headers = {'User-Agent': 'Mozilla/5.0'}
     href = get_news('https://nguoiquansat.vn/vi-mo', headers)
-    chat_id = "@nqsvmm"  # 🔥 Thay bằng username channel hoặc -100xxxxxxxxxx nếu là kênh private
+    chat_id = "@newvmvm"  # 🔥 Thay bằng username channel hoặc -100xxxxxxxxxx nếu là kênh private
 
     if href:
         for title, summary, link in href:

@@ -96,7 +96,7 @@ async def send_news_doanhnghiepnqs():
     print("Bot DoanhNghiepNQS đang gửi tin tức...")
     headers = {'User-Agent': 'Mozilla/5.0'}
     href = get_news('https://nguoiquansat.vn/doanh-nghiep', headers)
-    chat_id = "@nqsdnn"  # 🔥 Thay bằng username channel hoặc -100xxxxxxxxxx nếu là kênh private
+    chat_id = "@newdndn"  # 🔥 Thay bằng username channel hoặc -100xxxxxxxxxx nếu là kênh private
 
     if href:
         for title, summary, link in href:

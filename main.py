@@ -117,10 +117,10 @@ async def run_bot(token, url, sheet_name, chat_id, minutes):
     scheduler.start()
 
     logger.info(f"Bot {sheet_name} đang chạy...")
-    
+
     await bot.initialize()
     await bot.start()
-    await bot.run_polling(allowed_updates=Update.ALL_TYPES)
+    await bot.run_polling()
 
 async def main():
     await asyncio.gather(
@@ -129,4 +129,7 @@ async def main():
     )
 
 if __name__ == "__main__":
-    asyncio.run(main())  # SỬA LẠI: Không dùng get_event_loop(), chỉ dùng asyncio.run()
+    try:
+        asyncio.run(main())
+    except RuntimeError as e:
+        logger.error(f"Lỗi runtime: {e}")()

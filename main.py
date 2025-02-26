@@ -92,12 +92,12 @@ async def send_news(bot, url, sheet_name, chat_id):
                 message = f"📢 {title}\n{summary}\n🔗 {link}"
                 await bot.bot.send_message(chat_id=chat_id, text=message)
 
-async def run_bot(token, url, sheet_name, chat_id):
+async def run_bot(token, url, sheet_name, chat_id , minutes):
     bot = ApplicationBuilder().token(token).build()
     bot.add_handler(CommandHandler("start", lambda update, context: update.message.reply_text(f"Bot {sheet_name} đã hoạt động!")))
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news, 'interval', minutes=4, misfire_grace_time=30, args=[bot, url, sheet_name, chat_id])
+    scheduler.add_job(send_news, 'interval', minutes=minutes, misfire_grace_time=30, args=[bot, url, sheet_name, chat_id])
     scheduler.start()
 
     print(f"Bot {sheet_name} đang chạy...")
@@ -105,8 +105,8 @@ async def run_bot(token, url, sheet_name, chat_id):
 
 async def main():
     await asyncio.gather(
-        run_bot("7555641534:AAHmv8xvoycx7gDQrOMcbEYcHtv1yJJjGc8", 'https://nguoiquansat.vn/doanh-nghiep', "DoanhNghiepNQS", "@newdndn"),
-        run_bot("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A", 'https://nguoiquansat.vn/vi-mo', "ViMoNQS", "@newvmvm")
+        run_bot("7555641534:AAHmv8xvoycx7gDQrOMcbEYcHtv1yJJjGc8", 'https://nguoiquansat.vn/doanh-nghiep', "DoanhNghiepNQS", "@newdndn",6),
+        run_bot("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A", 'https://nguoiquansat.vn/vi-mo', "ViMoNQS", "@newvmvm",4)
     )
 
 if __name__ == "__main__":

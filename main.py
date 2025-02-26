@@ -130,6 +130,11 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        loop = asyncio.get_event_loop()
+        if loop.is_running():  # Kiểm tra xem event loop đã chạy chưa
+            loop.create_task(main())  
+        else:
+            loop.run_until_complete(main())
     except RuntimeError as e:
-        logger.error(f"Lỗi runtime: {e}")()
+        logger.error(f"Lỗi runtime: {e}")
+

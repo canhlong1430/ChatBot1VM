@@ -27,10 +27,12 @@ def connect_google_sheets(sheet_name):
     return sheet
 
 def update_google_sheet(data, sheet_name):
-    sheet = connect_google_sheets(sheet_name)  # Hàm kết nối Google Sheets
+    sheet = connect_google_sheets(sheet_name)
+    if not sheet:
+        return set()
+    
     vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
     now = datetime.datetime.now(vn_tz)
-
     today_date = now.strftime("%d-%m-%Y")
     current_time = now.strftime("%H:%M:%S")
 
@@ -47,9 +49,9 @@ def update_google_sheet(data, sheet_name):
 
     if new_data:
         worksheet.append_rows(new_data, value_input_option="RAW")
-        print(f"Đã thêm {len(new_data)} tin mới vào Google Sheet {sheet_name}.")
+        logger.info(f"Đã thêm {len(new_data)} tin mới vào Google Sheet {sheet_name}.")
     else:
-        print(f"Không có tin mới để thêm vào {sheet_name}.")
+        logger.info(f"Không có tin mới để thêm vào {sheet_name}.")
 
     return existing_links
 
@@ -59,8 +61,9 @@ def update_google_sheet(data, sheet_name):
 def get_news(url, headers):
     href = []
     r = requests.get(url, headers=headers)
-    r.encoding = 'utf-8'  # Xử lý lỗi Unicode
+    r.encoding = 'utf-8'
     soup = BeautifulSoup(r.text, 'html.parser')
+
     mydiv_nqs = soup.find_all('h2', {'class': 'b-grid__title'})
     mydiv_nqs1 = soup.find_all('h3', {'class': 'b-grid__title'})
 
@@ -80,7 +83,7 @@ def get_news(url, headers):
 # Bot gửi tin tức
 # ===============================
 async def send_news(bot, url, sheet_name, chat_id):
-    print(f"Bot {sheet_name} đang gửi tin tức...")
+    logger.info(f"Bot {sheet_name} đang gửi tin tức...")
     headers = {'User-Agent': 'Mozilla/5.0'}
     href = get_news(url, headers)
     existing_links = update_google_sheet(href, sheet_name)
@@ -92,21 +95,21 @@ async def send_news(bot, url, sheet_name, chat_id):
                 message = f"📢 {title}\n{summary}\n🔗 {link}"
                 await bot.bot.send_message(chat_id=chat_id, text=message)
 
-async def run_bot(token, url, sheet_name, chat_id , minutes):
+async def run_bot(token, url, sheet_name, chat_id, minutes):
     bot = ApplicationBuilder().token(token).build()
     bot.add_handler(CommandHandler("start", lambda update, context: update.message.reply_text(f"Bot {sheet_name} đã hoạt động!")))
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news, 'interval', minutes=minutes, misfire_grace_time=30, args=[bot, url, sheet_name, chat_id])
+    scheduler.add_job(lambda: asyncio.create_task(send_news(bot, url, sheet_name, chat_id)), 'interval', minutes=minutes, misfire_grace_time=30)
     scheduler.start()
 
-    print(f"Bot {sheet_name} đang chạy...")
+    logger.info(f"Bot {sheet_name} đang chạy...")
     await bot.run_polling()
 
 async def main():
     await asyncio.gather(
-        run_bot("7555641534:AAHmv8xvoycx7gDQrOMcbEYcHtv1yJJjGc8", 'https://nguoiquansat.vn/doanh-nghiep', "DoanhNghiepNQS", "@newdndn",6),
-        run_bot("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A", 'https://nguoiquansat.vn/vi-mo', "ViMoNQS", "@newvmvm",4)
+        run_bot("7555641534:AAHmv8xvoycx7gDQrOMcbEYcHtv1yJJjGc8", 'https://nguoiquansat.vn/doanh-nghiep', "DoanhNghiepNQS", "@newdndn", 6),
+        run_bot("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A", 'https://nguoiquansat.vn/vi-mo', "ViMoNQS", "@newvmvm", 4)
     )
 
 if __name__ == "__main__":

@@ -97,7 +97,7 @@ async def run_bot(token, url, sheet_name, chat_id):
     bot.add_handler(CommandHandler("start", lambda update, context: update.message.reply_text(f"Bot {sheet_name} đã hoạt động!")))
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_news, 'interval', minutes=65, misfire_grace_time=30, args=[bot, url, sheet_name, chat_id])
+    scheduler.add_job(send_news, 'interval', minutes=4, misfire_grace_time=30, args=[bot, url, sheet_name, chat_id])
     scheduler.start()
 
     print(f"Bot {sheet_name} đang chạy...")

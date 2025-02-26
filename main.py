@@ -1,6 +1,6 @@
 import asyncio
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import requests
 from bs4 import BeautifulSoup
@@ -8,28 +8,36 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import datetime
 import pytz
-import nest_asyncio
 import os
-import logging
 import json
-nest_asyncio.apply()  # Fix lỗi nested event loop
+import logging
+
 # ===============================
 # Setup logging
 # ===============================
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 # ===============================
 # Hàm kết nối Google Sheets
 # ===============================
 def connect_google_sheets(sheet_name):
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    
     creds_json = os.getenv("GOOGLE_CREDENTIALS")
-    creds_dict = json.loads(creds_json)
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-
-    client = gspread.authorize(creds)
-    sheet = client.open(sheet_name)
-    return sheet
+    if not creds_json:
+        logger.error("GOOGLE_CREDENTIALS không tồn tại!")
+        return None
+    
+    try:
+        creds_dict = json.loads(creds_json)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        client = gspread.authorize(creds)
+        sheet = client.open(sheet_name)
+        return sheet
+    except json.JSONDecodeError as e:
+        logger.error(f"Lỗi JSONDecodeError: {e}")
+        return None
 
 def update_google_sheet(data, sheet_name):
     sheet = connect_google_sheets(sheet_name)
@@ -105,7 +113,11 @@ async def run_bot(token, url, sheet_name, chat_id, minutes):
     bot.add_handler(CommandHandler("start", lambda update, context: update.message.reply_text(f"Bot {sheet_name} đã hoạt động!")))
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(lambda: asyncio.create_task(send_news(bot, url, sheet_name, chat_id)), 'interval', minutes=minutes, misfire_grace_time=30)
+    
+    # 🔥 Sử dụng `run_coroutine_threadsafe` để gọi `async` function
+    loop = asyncio.get_event_loop()
+    scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(send_news(bot, url, sheet_name, chat_id), loop), 'interval', minutes=minutes, misfire_grace_time=30)
+
     scheduler.start()
 
     logger.info(f"Bot {sheet_name} đang chạy...")

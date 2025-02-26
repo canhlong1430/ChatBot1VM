@@ -128,13 +128,23 @@ async def main():
         run_bot("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A", 'https://nguoiquansat.vn/vi-mo', "ViMoNQS", "@newvmvm", 4)
     )
 
+import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
+
+async def main():
+    # Chạy bot ở đây
+    pass  
+
 if __name__ == "__main__":
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():  # Kiểm tra xem event loop đã chạy chưa
-            loop.create_task(main())  
-        else:
-            loop.run_until_complete(main())
+        loop = asyncio.new_event_loop()  # Luôn tạo loop mới
+        asyncio.set_event_loop(loop)  # Gán loop mới
+        loop.run_until_complete(main())  # Chạy bot
     except RuntimeError as e:
         logger.error(f"Lỗi runtime: {e}")
+    finally:
+        loop.close()  # Đảm bảo loop đóng đúng cách
+
 

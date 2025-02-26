@@ -1,7 +1,6 @@
 import asyncio
-from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 import requests
 from bs4 import BeautifulSoup
 import gspread
@@ -108,25 +107,27 @@ async def send_news(bot, url, sheet_name, chat_id):
                 message = f"📢 {title}\n{summary}\n🔗 {link}"
                 await bot.bot.send_message(chat_id=chat_id, text=message)
 
-async def run_bot(token, url, sheet_name, chat_id, minutes):
+async def run_bot(token, url, sheet_name, chat_id, minutes, loop):
     bot = ApplicationBuilder().token(token).build()
     bot.add_handler(CommandHandler("start", lambda update, context: update.message.reply_text(f"Bot {sheet_name} đã hoạt động!")))
 
-    scheduler = AsyncIOScheduler()
+    scheduler = BackgroundScheduler()
     
-    # 🔥 Sử dụng `run_coroutine_threadsafe` để gọi `async` function
-    loop = asyncio.get_event_loop()
-    scheduler.add_job(lambda: asyncio.run_coroutine_threadsafe(send_news(bot, url, sheet_name, chat_id), loop), 'interval', minutes=minutes, misfire_grace_time=30)
-
+    # 🔥 Thay vì await, dùng loop để chạy background task
+    scheduler.add_job(lambda: loop.create_task(send_news(bot, url, sheet_name, chat_id)), 'interval', minutes=minutes, misfire_grace_time=30)
     scheduler.start()
 
     logger.info(f"Bot {sheet_name} đang chạy...")
-    await bot.run_polling()
+    
+    # 🔥 Chạy bot trong background bằng create_task()
+    loop.create_task(bot.run_polling())
 
 async def main():
+    loop = asyncio.get_event_loop()
+
     await asyncio.gather(
-        run_bot("7555641534:AAHmv8xvoycx7gDQrOMcbEYcHtv1yJJjGc8", 'https://nguoiquansat.vn/doanh-nghiep', "DoanhNghiepNQS", "@newdndn", 6),
-        run_bot("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A", 'https://nguoiquansat.vn/vi-mo', "ViMoNQS", "@newvmvm", 4)
+        run_bot("7555641534:AAHmv8xvoycx7gDQrOMcbEYcHtv1yJJjGc8", 'https://nguoiquansat.vn/doanh-nghiep', "DoanhNghiepNQS", "@newdndn", 6, loop),
+        run_bot("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A", 'https://nguoiquansat.vn/vi-mo', "ViMoNQS", "@newvmvm", 4, loop)
     )
 
 if __name__ == "__main__":

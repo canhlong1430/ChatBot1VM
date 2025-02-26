@@ -105,8 +105,14 @@ async def send_news(bot, url, sheet_name, chat_id):
             if link not in existing_links:
                 await asyncio.sleep(1)
                 message = f"📢 {title}\n{summary}\n🔗 {link}"
-                await bot.bot.send_message(chat_id=chat_id, text=message)
+                try:
+                    await bot.bot.send_message(chat_id=chat_id, text=message)
+                except Exception as e:
+                    logger.error(f"Lỗi khi gửi tin: {e}")
 
+# ===============================
+# Chạy bot với APScheduler
+# ===============================
 async def run_bot(token, url, sheet_name, chat_id, minutes):
     bot = ApplicationBuilder().token(token).build()
     bot.add_handler(CommandHandler("start", lambda update, context: update.message.reply_text(f"Bot {sheet_name} đã hoạt động!")))
@@ -117,18 +123,25 @@ async def run_bot(token, url, sheet_name, chat_id, minutes):
 
     logger.info(f"Bot {sheet_name} đang chạy...")
     
-    # 🔥 Sử dụng await thay vì create_task()
-    await bot.run_polling()
+    # 🔥 Dùng asyncio.create_task() để không chặn event loop chính
+    asyncio.create_task(bot.run_polling())
 
+# ===============================
+# Chạy nhiều bot cùng lúc
+# ===============================
 async def main():
     await asyncio.gather(
         run_bot("7555641534:AAHmv8xvoycx7gDQrOMcbEYcHtv1yJJjGc8", 'https://nguoiquansat.vn/doanh-nghiep', "DoanhNghiepNQS", "@newdndn", 6),
         run_bot("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A", 'https://nguoiquansat.vn/vi-mo', "ViMoNQS", "@newvmvm", 4)
     )
 
+# ===============================
+# Entry Point
+# ===============================
 if __name__ == "__main__":
     try:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()  # ✅ Tạo event loop mới để tránh lỗi Railway
+        asyncio.set_event_loop(loop)
         loop.run_until_complete(main())
     except RuntimeError as e:
         logger.error(f"Lỗi runtime: {e}")

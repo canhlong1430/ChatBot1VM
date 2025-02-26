@@ -12,7 +12,11 @@ import nest_asyncio
 import os
 import json
 nest_asyncio.apply()  # Fix lỗi nested event loop
-
+# ===============================
+# Setup logging
+# ===============================
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 # ===============================
 # Hàm kết nối Google Sheets
 # ===============================

@@ -122,9 +122,11 @@ async def run_bot(token, url, sheet_name, chat_id, minutes):
     scheduler.start()
 
     logger.info(f"Bot {sheet_name} đang chạy...")
-    
-    # ✅ Không dùng await để tránh lỗi Railway
-    asyncio.create_task(bot.run_polling())
+
+    await bot.initialize()
+    await bot.start()
+    await bot.updater.start_polling()
+    await bot.idle()  # Giữ bot chạy vĩnh viễn
 
 # ===============================
 # Chạy nhiều bot cùng lúc
@@ -144,5 +146,8 @@ if __name__ == "__main__":
         loop = asyncio.new_event_loop()  # ✅ Tạo event loop mới
         asyncio.set_event_loop(loop)
         loop.run_until_complete(main())
+        loop.run_forever()  # ✅ Giữ loop chạy vĩnh viễn
+    except KeyboardInterrupt:
+        logger.info("Bot đã dừng.")
     except RuntimeError as e:
         logger.error(f"Lỗi runtime: {e}")

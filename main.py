@@ -123,24 +123,25 @@ async def run_bot(token, url, sheet_name, chat_id, minutes):
 
     logger.info(f"Bot {sheet_name} đang chạy...")
     
-    # 🔥 Dùng asyncio.create_task() để không chặn event loop chính
+    # ✅ Không dùng await để tránh lỗi Railway
     asyncio.create_task(bot.run_polling())
 
 # ===============================
 # Chạy nhiều bot cùng lúc
 # ===============================
 async def main():
-    await asyncio.gather(
+    tasks = [
         run_bot("7555641534:AAHmv8xvoycx7gDQrOMcbEYcHtv1yJJjGc8", 'https://nguoiquansat.vn/doanh-nghiep', "DoanhNghiepNQS", "@newdndn", 6),
         run_bot("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A", 'https://nguoiquansat.vn/vi-mo', "ViMoNQS", "@newvmvm", 4)
-    )
+    ]
+    await asyncio.gather(*tasks)
 
 # ===============================
 # Entry Point
 # ===============================
 if __name__ == "__main__":
     try:
-        loop = asyncio.new_event_loop()  # ✅ Tạo event loop mới để tránh lỗi Railway
+        loop = asyncio.new_event_loop()  # ✅ Tạo event loop mới
         asyncio.set_event_loop(loop)
         loop.run_until_complete(main())
     except RuntimeError as e:

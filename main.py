@@ -57,6 +57,7 @@ def get_news(url):
     news_list = []
     for new in soup.find_all(['h2', 'h3'], {'class': 'b-grid__title'}):
         link_tag = new.find('a')
+        print(link_tag)
         if not link_tag:
             continue
         link = link_tag.get('href')

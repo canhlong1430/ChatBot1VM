@@ -1,49 +1,85 @@
 import asyncio
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import requests
-from bs4 import BeautifulSoup
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-import datetime
-import pytz
 import os
 import json
-import logging
+import requests
+import gspread
+import nest_asyncio
+from flask import Flask, request
+from telegram import Bot, Update
+from apscheduler.schedulers.background import BackgroundScheduler
+from oauth2client.service_account import ServiceAccountCredentials
+from bs4 import BeautifulSoup
+import datetime
+import pytz
 
-# ===============================
-# Setup logging
-# ===============================
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+nest_asyncio.apply()
 
-# ===============================
-# Hàm kết nối Google Sheets
-# ===============================
+app = Flask(__name__)
+SENT_NEWS_FILE = "sent_news.json"
+
+# Kết nối Google Sheets
 def connect_google_sheets(sheet_name):
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    
     creds_json = os.getenv("GOOGLE_CREDENTIALS")
     if not creds_json:
-        logger.error("GOOGLE_CREDENTIALS không tồn tại!")
-        return None
-    
+        raise ValueError("❌ Lỗi: GOOGLE_CREDENTIALS không tồn tại!")
     try:
         creds_dict = json.loads(creds_json)
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-        client = gspread.authorize(creds)
-        sheet = client.open(sheet_name)
-        return sheet
-    except json.JSONDecodeError as e:
-        logger.error(f"Lỗi JSONDecodeError: {e}")
-        return None
+        return gspread.authorize(creds).open(sheet_name)
+    except json.JSONDecodeError:
+        raise ValueError("❌ Lỗi: GOOGLE_CREDENTIALS không hợp lệ!")
 
-def update_google_sheet(data, sheet_name):
-    sheet = connect_google_sheets(sheet_name)
-    if not sheet:
+# Load & lưu danh sách tin đã gửi
+def load_sent_news():
+    try:
+        with open(SENT_NEWS_FILE, "r", encoding="utf-8") as f:
+            return set(json.load(f))
+    except (FileNotFoundError, json.JSONDecodeError):
         return set()
-    
+
+def save_sent_news(sent_news):
+    with open(SENT_NEWS_FILE, "w", encoding="utf-8") as f:
+        json.dump(list(sent_news), f, ensure_ascii=False, indent=4)
+
+sent_news = load_sent_news()
+
+# Lấy tin tức từ Người Quan Sát
+def get_news(url):
+    headers = {"User-Agent": "Mozilla/5.0"}
+    try:
+        r = requests.get(url, headers=headers, timeout=10)
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, 'html.parser')
+    except requests.RequestException:
+        return []
+
+    news_list = []
+    for new in soup.find_all(['h2', 'h3'], {'class': 'b-grid__title'}):
+        link_tag = new.find('a')
+        if not link_tag:
+            continue
+        link = link_tag.get('href')
+        if not link or "http" in link:
+            continue
+
+        try:
+            r = requests.get(link, headers=headers, timeout=10)
+            r.raise_for_status()
+            soup = BeautifulSoup(r.text, 'html.parser')
+            summary = soup.find('p', {'class': 'sc-longform-header-sapo'})
+            news_list.append(
+                (new.get_text(strip=True), summary.get_text(strip=True) if summary else "Không có tóm tắt", link))
+        except requests.RequestException:
+            continue
+    return news_list
+
+# Cập nhật Google Sheets
+def update_google_sheet(data, sheet_name):
+    if not data:
+        return
+
+    sheet = connect_google_sheets(sheet_name)
     vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
     now = datetime.datetime.now(vn_tz)
     today_date = now.strftime("%d-%m-%Y")
@@ -55,96 +91,65 @@ def update_google_sheet(data, sheet_name):
         worksheet = sheet.add_worksheet(title=today_date, rows="1000", cols="4")
         worksheet.append_row(["Title", "Summary", "Link", "Updated Time"])
 
-    worksheet.update(range_name='D1', values=[[f"Cập nhật lúc: {current_time} (GMT+7)"]])
+    worksheet.update(range_name="D1", values=[[f"Cập nhật lúc: {current_time} (GMT+7)"]])
 
     existing_links = set(row[2] for row in worksheet.get_all_values()[1:] if len(row) > 2)
     new_data = [row for row in data if row[2] not in existing_links]
 
     if new_data:
         worksheet.append_rows(new_data, value_input_option="RAW")
-        logger.info(f"Đã thêm {len(new_data)} tin mới vào Google Sheet {sheet_name}.")
-    else:
-        logger.info(f"Không có tin mới để thêm vào {sheet_name}.")
+        print(f"Đã thêm {len(new_data)} tin mới vào Google Sheet {sheet_name}.")
 
-    return existing_links
+# Gửi tin tức tới Telegram
+async def send_news(bot, config):
+    news_list = get_news(config["url"])
+    if not news_list:
+        print(f"📭 Không có tin mới từ {config['url']}")
+        return
 
-# ===============================
-# Lấy tin tức từ website
-# ===============================
-def get_news(url, headers):
-    href = []
-    r = requests.get(url, headers=headers)
-    r.encoding = 'utf-8'
-    soup = BeautifulSoup(r.text, 'html.parser')
+    new_entries = []
+    for title, summary, link in news_list:
+        message = f"📢 *{title}*\n{summary}\n🔗 {link}"
+        try:
+            await bot.send_message(chat_id=config["chat_id"], text=message, parse_mode="Markdown")
+            sent_news.add(link)
+            save_sent_news(sent_news)
+            new_entries.append(
+                (title, summary, link, datetime.datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%H:%M:%S")))
+        except Exception as e:
+            print(f"⚠️ Lỗi gửi tin: {e}")
 
-    mydiv_nqs = soup.find_all('h2', {'class': 'b-grid__title'})
-    mydiv_nqs1 = soup.find_all('h3', {'class': 'b-grid__title'})
+    update_google_sheet(new_entries, config["sheet_name"])
 
-    for new in mydiv_nqs + mydiv_nqs1:
-        link = new.a.get('href')
-        r = requests.get(link)
-        r.encoding = 'utf-8'
-        soup = BeautifulSoup(r.text, 'html.parser')
-        smr = soup.find('p', {'class': 'sc-longform-header-sapo block-sc-sapo'})
-        summary = smr.get_text() if smr else "No summary available"
-        title = new.a.get_text()
-        href.append((title, summary, link))
+# Cấu hình bot Telegram
+BOT_CONFIGS = [
+    {"token": os.getenv("BOT_TOKEN_1"), "chat_id": "@newdndn", "url": "https://nguoiquansat.vn/doanh-nghiep", "sheet_name": "DoanhNghiepNQS"},
+    {"token": os.getenv("BOT_TOKEN_2"), "chat_id": "@newvmvm", "url": "https://nguoiquansat.vn/vi-mo", "sheet_name": "ViMoNQS"}
+]
 
-    return href
+bots = [Bot(cfg["token"]) for cfg in BOT_CONFIGS]
 
-# ===============================
-# Bot gửi tin tức
-# ===============================
-async def send_news(bot, url, sheet_name, chat_id):
-    logger.info(f"Bot {sheet_name} đang gửi tin tức...")
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    href = get_news(url, headers)
-    existing_links = update_google_sheet(href, sheet_name)
+# Scheduler
+scheduler = BackgroundScheduler()
+async def schedule_news_sending():
+    print("🕒 Scheduler bắt đầu gửi tin...")
+    tasks = [send_news(bot, cfg) for bot, cfg in zip(bots, BOT_CONFIGS)]
+    await asyncio.gather(*tasks)
 
-    if href:
-        for title, summary, link in href:
-            if link not in existing_links:
-                await asyncio.sleep(1)
-                message = f"\ud83d\udce2 {title}\n{summary}\n\ud83d\udd17 {link}"
-                await bot.bot.send_message(chat_id=chat_id, text=message)
-
-async def run_bot(token, url, sheet_name, chat_id, minutes):
-    bot = ApplicationBuilder().token(token).build()
-    bot.add_handler(CommandHandler("start", lambda update, context: update.message.reply_text(f"Bot {sheet_name} đã hoạt động!")))
-
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(lambda: asyncio.create_task(send_news(bot, url, sheet_name, chat_id)), 'interval', minutes=minutes, misfire_grace_time=30)
+if not scheduler.get_jobs():
+    scheduler.add_job(lambda: asyncio.run(schedule_news_sending()), 'interval', minutes=10, max_instances=1,
+                      replace_existing=True)
     scheduler.start()
+    print("✅ Scheduler đã khởi động!")
 
-    logger.info(f"Bot {sheet_name} đang chạy...")
-
-    await bot.initialize()
-    await bot.start()
-    await bot.run_polling()
-
-async def main():
-    await asyncio.gather(
-        run_bot("7555641534:AAHmv8xvoycx7gDQrOMcbEYcHtv1yJJjGc8", 'https://nguoiquansat.vn/doanh-nghiep', "DoanhNghiepNQS", "@newdndn", 6),
-        run_bot("8155741015:AAH4Ck3Dc-tpWKFUn8yMLZrNUTOLruZ3q9A", 'https://nguoiquansat.vn/vi-mo', "ViMoNQS", "@newvmvm", 4)
-    )
-
-import asyncio
-import logging
-
-logger = logging.getLogger(__name__)
-
-async def main():
-    # Chạy bot ở đây
-    pass  
+@app.route("/webhook", methods=["POST"])
+def telegram_webhook():
+    Update.de_json(request.get_json(), bots[0])
+    return "OK"
 
 if __name__ == "__main__":
-    try:
-        loop = asyncio.new_event_loop()  # Luôn tạo loop mới
-        asyncio.set_event_loop(loop)  # Gán loop mới
-        loop.run_until_complete(main())  # Chạy bot
-    except RuntimeError as e:
-        logger.error(f"Lỗi runtime: {e}")
-    finally:
-        loop.close()  # Đảm bảo loop đóng đúng cách
-
-
+    app.debug = False
+    app.use_reloader = False
+    for bot in bots:
+        bot.set_webhook(url=os.getenv("WEBHOOK_URL"))
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))

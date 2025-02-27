@@ -74,7 +74,7 @@ def get_news(url,config):
             soup = BeautifulSoup(r.text, 'html.parser')
             summary = soup.find('p', {'class': 'sc-longform-header-sapo'})
             news_list.append(
-                (new.get_text(strip=True), summary.get_text(strip=True) if summary else "Không có tóm tắt", link))
+                (new.get_text(strip=True), summary.get_text(strip=True) if summary else "Không có tóm tắt", link,datetime.datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%H:%M:%S")))
         except requests.RequestException:
             continue
     update_google_sheet(news_list, config["sheet_name"])
@@ -134,9 +134,6 @@ async def send_news(bot, config):
             print(f"⚠️ Lỗi gửi tin: {e}")
 
    
-
-
-
 # Scheduler
 scheduler = BackgroundScheduler()
 async def schedule_news_sending():

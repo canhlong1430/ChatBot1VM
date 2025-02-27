@@ -85,20 +85,31 @@ def update_google_sheet(data, sheet_name):
     today_date = now.strftime("%d-%m-%Y")
     current_time = now.strftime("%H:%M:%S")
 
-    try:
-        worksheet = sheet.worksheet(today_date)
-    except gspread.exceptions.WorksheetNotFound:
-        worksheet = sheet.add_worksheet(title=today_date, rows="1000", cols="4")
-        worksheet.append_row(["Title", "Summary", "Link", "Updated Time"])
-
-    worksheet.update(range_name="D1", values=[[f"Cập nhật lúc: {current_time} (GMT+7)"]])
-
-    existing_links = set(row[2] for row in worksheet.get_all_values()[1:] if len(row) > 2)
-    new_data = [row for row in data if row[2] not in existing_links]
-
+    # Lấy danh sách các worksheet có trong sheet
+    worksheets = sheet.worksheets()
+    if worksheets:
+        last_sheet = worksheets[-1]  # Lấy sheet cuối cùng
+        if last_sheet.title != today_date:  # Chỉ rename và xóa dữ liệu nếu qua ngày mới
+            last_sheet.update_title(today_date)
+            last_sheet.clear()
+            last_sheet.append_row(["Title", "Summary", "Link", "Updated Time"])  # Thêm tiêu đề mới
+    else:
+        last_sheet = sheet.add_worksheet(title=today_date, rows="1000", cols="4")
+        last_sheet.append_row(["Title", "Summary", "Link", "Updated Time"])  # Tạo sheet mới nếu chưa có
+    
+    # Cập nhật thời gian
+    last_sheet.update(range_name="D1", values=[[f"Cập nhật lúc: {current_time} (GMT+7)"]])
+    
+    # Lọc trùng link đã có trong Google Sheet hoặc đã gửi nhưng chưa có trong sheet
+    existing_links = set(row[2] for row in last_sheet.get_all_values()[1:] if len(row) > 2)
+    all_sent_links = sent_news  # Danh sách các link đã gửi trong Telegram
+    
+    new_data = [row for row in data if row[2] not in existing_links or row[2] in all_sent_links]
+    
     if new_data:
-        worksheet.append_rows(new_data, value_input_option="RAW")
+        last_sheet.append_rows(new_data, value_input_option="RAW")
         print(f"Đã thêm {len(new_data)} tin mới vào Google Sheet {sheet_name}.")
+
 
 # Gửi tin tức tới Telegram
 async def send_news(bot, config):

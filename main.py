@@ -44,7 +44,7 @@ def save_sent_news(sent_news):
 
 sent_news = load_sent_news()
 
-# Lấy tin tức từ Người Quan Sát
+# Lấy tin tức
 def get_news(url):
     headers = {"User-Agent": "Mozilla/5.0"}
     try:
@@ -60,7 +60,7 @@ def get_news(url):
         if not link_tag:
             continue
         link = link_tag.get('href')
-        if not link  in link:
+        if not link or "http" in link:
             continue
 
         try:
@@ -85,31 +85,25 @@ def update_google_sheet(data, sheet_name):
     today_date = now.strftime("%d-%m-%Y")
     current_time = now.strftime("%H:%M:%S")
 
-    # Lấy danh sách các worksheet có trong sheet
     worksheets = sheet.worksheets()
     if worksheets:
-        last_sheet = worksheets[-1]  # Lấy sheet cuối cùng
-        if last_sheet.title != today_date:  # Chỉ rename và xóa dữ liệu nếu qua ngày mới
+        last_sheet = worksheets[-1]
+        if last_sheet.title != today_date:
             last_sheet.update_title(today_date)
             last_sheet.clear()
-            last_sheet.append_row(["Title", "Summary", "Link", "Updated Time"])  # Thêm tiêu đề mới
+            last_sheet.append_row(["Title", "Summary", "Link", "Updated Time"])
     else:
         last_sheet = sheet.add_worksheet(title=today_date, rows="1000", cols="4")
-        last_sheet.append_row(["Title", "Summary", "Link", "Updated Time"])  # Tạo sheet mới nếu chưa có
+        last_sheet.append_row(["Title", "Summary", "Link", "Updated Time"])
     
-    # Cập nhật thời gian
-    last_sheet.update(range_name="D1", values=[[f"Cập nhật lúc: {current_time} (GMT+7)"]])
-    
-    # Lọc trùng link đã có trong Google Sheet hoặc đã gửi nhưng chưa có trong sheet
     existing_links = set(row[2] for row in last_sheet.get_all_values()[1:] if len(row) > 2)
-    all_sent_links = sent_news  # Danh sách các link đã gửi trong Telegram
+    all_sent_links = sent_news
     
-    new_data = [row for row in data if row[2] not in existing_links or row[2] in all_sent_links]
+    new_data = [row for row in data if row[2] not in existing_links and row[2] not in all_sent_links]
     
     if new_data:
         last_sheet.append_rows(new_data, value_input_option="RAW")
         print(f"Đã thêm {len(new_data)} tin mới vào Google Sheet {sheet_name}.")
-
 
 # Gửi tin tức tới Telegram
 async def send_news(bot, config):
@@ -120,6 +114,9 @@ async def send_news(bot, config):
 
     new_entries = []
     for title, summary, link in news_list:
+        if link in sent_news:
+            continue
+        
         message = f"📢 *{title}*\n{summary}\n🔗 {link}"
         try:
             await bot.send_message(chat_id=config["chat_id"], text=message, parse_mode="Markdown")
@@ -134,7 +131,7 @@ async def send_news(bot, config):
 
 # Cấu hình bot Telegram
 BOT_CONFIGS = [
-    {"token": os.getenv("BOT_TOKEN_1"), "chat_id": 7286547285 , "url": "https://nguoiquansat.vn/doanh-nghiep", "sheet_name": "DoanhNghiepNQS"},
+    {"token": os.getenv("BOT_TOKEN_1"), "chat_id": 7286547285, "url": "https://nguoiquansat.vn/doanh-nghiep", "sheet_name": "DoanhNghiepNQS"},
     {"token": os.getenv("BOT_TOKEN_2"), "chat_id": 7286547285, "url": "https://nguoiquansat.vn/vi-mo", "sheet_name": "ViMoNQS"}
 ]
 
@@ -148,8 +145,7 @@ async def schedule_news_sending():
     await asyncio.gather(*tasks)
 
 if not scheduler.get_jobs():
-    scheduler.add_job(lambda: asyncio.run(schedule_news_sending()), 'interval', minutes=2, max_instances=1,
-                      replace_existing=True)
+    scheduler.add_job(lambda: asyncio.run(schedule_news_sending()), 'interval', minutes=2, max_instances=1, replace_existing=True)
     scheduler.start()
     print("✅ Scheduler đã khởi động!")
 
@@ -161,6 +157,6 @@ def telegram_webhook():
 if __name__ == "__main__":
     app.debug = False
     app.use_reloader = False
-    for bot in bots:
-        bot.set_webhook(url=os.getenv("WEBHOOK_URL"))
+    for i, bot in enumerate(bots):
+        bot.set_webhook(url=f"{os.getenv('WEBHOOK_URL')}/{i}")
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))

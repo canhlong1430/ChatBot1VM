@@ -16,6 +16,13 @@ nest_asyncio.apply()
 
 app = Flask(__name__)
 SENT_NEWS_FILE = "sent_news.json"
+# Cấu hình bot Telegram
+BOT_CONFIGS = [
+    {"token": os.getenv("BOT_TOKEN_1"), "chat_id": "@newdndn", "url": "https://nguoiquansat.vn/doanh-nghiep", "sheet_name": "DoanhNghiepNQS"},
+    {"token": os.getenv("BOT_TOKEN_2"), "chat_id": "@newvmvm", "url": "https://nguoiquansat.vn/vi-mo", "sheet_name": "ViMoNQS"}
+]
+
+bots = [Bot(cfg["token"]) for cfg in BOT_CONFIGS]
 
 # Kết nối Google Sheets
 def connect_google_sheets(sheet_name):
@@ -45,7 +52,7 @@ def save_sent_news(sent_news):
 sent_news = load_sent_news()
 
 # Lấy tin tức
-def get_news(url):
+def get_news(url,config):
     headers = {"User-Agent": "Mozilla/5.0"}
     try:
         r = requests.get(url, headers=headers, timeout=10)
@@ -70,7 +77,7 @@ def get_news(url):
                 (new.get_text(strip=True), summary.get_text(strip=True) if summary else "Không có tóm tắt", link))
         except requests.RequestException:
             continue
-    update_google_sheet(news_list,"DoanhNghiepNQS")
+    update_google_sheet(news_list, config["sheet_name"])
     return news_list
 
 # Cập nhật Google Sheets
@@ -106,7 +113,7 @@ def update_google_sheet(data, sheet_name):
 
 # Gửi tin tức tới Telegram
 async def send_news(bot, config):
-    news_list = get_news(config["url"])
+    news_list = get_news(config["url"],config)
     if not news_list:
         print(f"📭 Không có tin mới từ {config['url']}")
         return
@@ -128,13 +135,7 @@ async def send_news(bot, config):
 
    
 
-# Cấu hình bot Telegram
-BOT_CONFIGS = [
-    {"token": os.getenv("BOT_TOKEN_1"), "chat_id": "@newdndn", "url": "https://nguoiquansat.vn/doanh-nghiep", "sheet_name": "DoanhNghiepNQS"},
-    {"token": os.getenv("BOT_TOKEN_2"), "chat_id": "@newvmvm", "url": "https://nguoiquansat.vn/vi-mo", "sheet_name": "ViMoNQS"}
-]
 
-bots = [Bot(cfg["token"]) for cfg in BOT_CONFIGS]
 
 # Scheduler
 scheduler = BackgroundScheduler()

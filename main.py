@@ -37,22 +37,30 @@ def connect_google_sheets(sheet_name):
     except json.JSONDecodeError:
         raise ValueError("❌ Lỗi: GOOGLE_CREDENTIALS không hợp lệ!")
 
-# Load & lưu danh sách tin đã gửi
+# Load & lưu danh sách tin đã gửi (xóa tin quá 3 ngày)
 def load_sent_news():
     try:
         with open(SENT_NEWS_FILE, "r", encoding="utf-8") as f:
-            return set(json.load(f))
+            data = json.load(f)
+            # Lọc tin tức cũ hơn 3 ngày
+            three_days_ago = datetime.datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")) - datetime.timedelta(days=3)
+            return {link: date for link, date in data.items() if datetime.datetime.fromisoformat(date) > three_days_ago}
     except (FileNotFoundError, json.JSONDecodeError):
-        return set()
+        return {}
 
 def save_sent_news(sent_news):
     with open(SENT_NEWS_FILE, "w", encoding="utf-8") as f:
-        json.dump(list(sent_news), f, ensure_ascii=False, indent=4)
+        json.dump(sent_news, f, ensure_ascii=False, indent=4)
 
+# Lưu tin với timestamp
 sent_news = load_sent_news()
 
+def mark_news_sent(link):
+    sent_news[link] = datetime.datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).isoformat()
+    save_sent_news(sent_news)
+
 # Lấy tin tức
-def get_news(url,config):
+def get_news(url, config):
     headers = {"User-Agent": "Mozilla/5.0"}
     try:
         r = requests.get(url, headers=headers, timeout=10)
@@ -74,7 +82,8 @@ def get_news(url,config):
             soup = BeautifulSoup(r.text, 'html.parser')
             summary = soup.find('p', {'class': 'sc-longform-header-sapo'})
             news_list.append(
-                (new.get_text(strip=True), summary.get_text(strip=True) if summary else "Không có tóm tắt", link,datetime.datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%H:%M:%S")))
+                (new.get_text(strip=True), summary.get_text(strip=True) if summary else "Không có tóm tắt", link,
+                 datetime.datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%H:%M:%S")))
         except requests.RequestException:
             continue
     update_google_sheet(news_list, config["sheet_name"])
@@ -89,7 +98,6 @@ def update_google_sheet(data, sheet_name):
     vn_tz = pytz.timezone("Asia/Ho_Chi_Minh")
     now = datetime.datetime.now(vn_tz)
     today_date = now.strftime("%d-%m-%Y")
-    current_time = now.strftime("%H:%M:%S")
 
     worksheets = sheet.worksheets()
     if worksheets:
@@ -103,8 +111,8 @@ def update_google_sheet(data, sheet_name):
         last_sheet.append_row(["Title", "Summary", "Link", "Updated Time"])
     
     existing_links = set(row[2] for row in last_sheet.get_all_values()[1:] if len(row) > 2)
-    all_sent_links = sent_news
-    
+    all_sent_links = sent_news.keys()
+
     new_data = [row for row in data if row[2] not in existing_links and row[2] not in all_sent_links]
     
     if new_data:
@@ -113,27 +121,22 @@ def update_google_sheet(data, sheet_name):
 
 # Gửi tin tức tới Telegram
 async def send_news(bot, config):
-    news_list = get_news(config["url"],config)
+    news_list = get_news(config["url"], config)
     if not news_list:
         print(f"📭 Không có tin mới từ {config['url']}")
         return
 
-    new_entries = []
-    for title, summary, link , time in news_list:
+    for title, summary, link, time in news_list:
         if link in sent_news:
             continue
         
         message = f"📢 *{title}*\n{summary}\n🔗 {link}"
         try:
             await bot.send_message(chat_id=config["chat_id"], text=message, parse_mode="Markdown")
-            sent_news.add(link)
-            save_sent_news(sent_news)
-            new_entries.append(
-                (title, summary, link, datetime.datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%H:%M:%S")))
+            mark_news_sent(link)  # Lưu tin đã gửi
         except Exception as e:
             print(f"⚠️ Lỗi gửi tin: {e}")
 
-   
 # Scheduler
 scheduler = BackgroundScheduler()
 async def schedule_news_sending():

@@ -119,7 +119,7 @@ async def send_news(bot, config):
         return
 
     new_entries = []
-    for title, summary, link in news_list:
+    for title, summary, link , time in news_list:
         if link in sent_news:
             continue
         

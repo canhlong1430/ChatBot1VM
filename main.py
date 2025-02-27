@@ -60,8 +60,6 @@ def get_news(url):
         if not link_tag:
             continue
         link = link_tag.get('href')
-        if not link or "http" in link:
-            continue
 
         try:
             r = requests.get(link, headers=headers, timeout=10)

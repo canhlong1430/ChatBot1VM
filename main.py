@@ -70,7 +70,7 @@ def get_news(url):
                 (new.get_text(strip=True), summary.get_text(strip=True) if summary else "Không có tóm tắt", link))
         except requests.RequestException:
             continue
-        update_google_sheet(news_list, config["sheet_name"])
+        update_google_sheet(news_list, "DoanhNghiepNQS")
     return news_list
 
 # Cập nhật Google Sheets

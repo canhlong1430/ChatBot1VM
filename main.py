@@ -142,7 +142,7 @@ async def schedule_news_sending():
     await asyncio.gather(*tasks)
 
 if not scheduler.get_jobs():
-    scheduler.add_job(lambda: asyncio.run(schedule_news_sending()), 'interval', minutes=2, max_instances=1, replace_existing=True)
+    scheduler.add_job(lambda: asyncio.run(schedule_news_sending()), 'interval', minutes=2, max_instances=2, replace_existing=True)
     scheduler.start()
     print("✅ Scheduler đã khởi động!")
 

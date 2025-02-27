@@ -70,6 +70,7 @@ def get_news(url):
                 (new.get_text(strip=True), summary.get_text(strip=True) if summary else "Không có tóm tắt", link))
         except requests.RequestException:
             continue
+        update_google_sheet(news_list, config["sheet_name"])
     return news_list
 
 # Cập nhật Google Sheets
@@ -125,7 +126,7 @@ async def send_news(bot, config):
         except Exception as e:
             print(f"⚠️ Lỗi gửi tin: {e}")
 
-    update_google_sheet(new_entries, config["sheet_name"])
+   
 
 # Cấu hình bot Telegram
 BOT_CONFIGS = [

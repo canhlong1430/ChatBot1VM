@@ -86,7 +86,7 @@ def get_news(url, config):
                  datetime.datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%H:%M:%S")))
         except requests.RequestException:
             continue
-    update_google_sheet(news_list, config["sheet_name"])
+    #update_google_sheet(news_list, config["sheet_name"])
     return news_list
 
 # Cập nhật Google Sheets
@@ -122,6 +122,7 @@ def update_google_sheet(data, sheet_name):
 # Gửi tin tức tới Telegram
 async def send_news(bot, config):
     news_list = get_news(config["url"], config)
+    update_google_sheet(news_list, config["sheet_name"])
     if not news_list:
         print(f"📭 Không có tin mới từ {config['url']}")
         return

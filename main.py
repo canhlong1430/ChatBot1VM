@@ -113,7 +113,7 @@ def update_google_sheet(data, sheet_name):
     existing_links = set(row[2] for row in last_sheet.get_all_values()[1:] if len(row) > 2)
     all_sent_links = sent_news.keys()
 
-    new_data = [row for row in data if row[2] not in existing_links and row[2] not in all_sent_links]
+    new_data = [row for row in data if row[2] not in existing_links]
     
     if new_data:
         last_sheet.append_rows(new_data, value_input_option="RAW")

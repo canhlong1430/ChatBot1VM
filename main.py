@@ -131,8 +131,8 @@ async def send_news(bot, config):
 
 # Cấu hình bot Telegram
 BOT_CONFIGS = [
-    {"token": os.getenv("BOT_TOKEN_1"), "chat_id": 7286547285, "url": "https://nguoiquansat.vn/doanh-nghiep", "sheet_name": "DoanhNghiepNQS"},
-    {"token": os.getenv("BOT_TOKEN_2"), "chat_id": 7286547285, "url": "https://nguoiquansat.vn/vi-mo", "sheet_name": "ViMoNQS"}
+    {"token": os.getenv("BOT_TOKEN_1"), "chat_id": "@newdndn", "url": "https://nguoiquansat.vn/doanh-nghiep", "sheet_name": "DoanhNghiepNQS"},
+    {"token": os.getenv("BOT_TOKEN_2"), "chat_id": "@newvmvm", "url": "https://nguoiquansat.vn/vi-mo", "sheet_name": "ViMoNQS"}
 ]
 
 bots = [Bot(cfg["token"]) for cfg in BOT_CONFIGS]

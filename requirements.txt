@@ -6,5 +6,7 @@ oauth2client
 apscheduler
 nest_asyncio
 pytz
-logging
+webdriver_manager
+selenium
 flask
+gunicorn

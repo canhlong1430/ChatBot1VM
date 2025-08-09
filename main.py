@@ -160,4 +160,4 @@ if __name__ == "__main__":
     app.use_reloader = False
     for i, bot in enumerate(bots):
         bot.set_webhook(url=f"{os.getenv('WEBHOOK_URL')}/{i}")
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8089)))
